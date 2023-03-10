@@ -25,6 +25,7 @@ public sealed class FileGenerator
     {
         await using var sw = new StreamWriter(fileName);
 
+        var repeatRandomMaxValue = linesCount / 1000_000 < 10 ? 10 : 100;
         var repeats = new List<string>(); 
         for (var i = 0; i < linesCount; i++)
         {
@@ -36,12 +37,12 @@ public sealed class FileGenerator
             var id = _random.Next(0, int.MaxValue);
             var name = _cachedNames[_random.Next(0, _cachedNames.Length)];
             
-            if (_random.Next(0, 10) == 0)
+            if (_random.Next(0, repeatRandomMaxValue) == 0)
             {
                 repeats.Add(name);
             }
 
-            if (_random.Next(0, 20) == 0 && repeats.Count > 0)
+            if (_random.Next(0, repeatRandomMaxValue * 2) == 0 && repeats.Count > 0)
             {
                 name = repeats[0];
                 repeats.Remove(name);

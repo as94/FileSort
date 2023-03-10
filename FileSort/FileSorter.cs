@@ -63,12 +63,12 @@ public sealed class FileSorter
     private static async Task CreateSmallFileAsync(int filesCount, Row?[] rows)
     {
         var newFilePath = Path.Combine(TmpDirectoryName, $"file_{filesCount + 1}.txt");
-        await using var writer = new StreamWriter(newFilePath);
+        var sortedRows = rows
+            .Where(r => r != null)
+            .OrderBy(x => x)
+            .Select(r => r!.Value);
 
-        foreach (var r in rows.Where(r => r != null).OrderBy(x => x))
-        {
-            await writer.WriteLineAsync(r!.Value);
-        }
+        await File.WriteAllLinesAsync(newFilePath, sortedRows);
     }
 
     private async Task CreateSortedLargeFileAsync(CancellationToken ct)

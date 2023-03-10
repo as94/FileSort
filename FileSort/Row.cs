@@ -6,23 +6,11 @@ public sealed class Row : IComparable<Row>
 {
     private readonly int _id;
     private readonly string _name;
-
-    private static readonly Regex ValidationRegex = new(@"^\d+\. \w+$");
     
     public string Value { get; }
 
     public Row(string value)
     {
-        if (value == null)
-        {
-            throw new ArgumentNullException(nameof(value));
-        }
-
-        if (!ValidationRegex.IsMatch(value))
-        {
-            throw new ArgumentNullException($"Bad format {value}, should be [number]. [word]");
-        }
-
         var splitResult = value.Split(' ');
         _id = int.Parse(splitResult[0].Remove(splitResult[0].Length - 1));
         _name = splitResult[1];
