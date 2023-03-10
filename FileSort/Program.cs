@@ -7,31 +7,21 @@ var sw = Stopwatch.StartNew();
 var command = args[0];
 if (command == "generate")
 {
-    var fileSizeInMbInput = args[1];
-    if (!int.TryParse(fileSizeInMbInput, out var fileSizeInMb))
+    if (!long.TryParse(args[1], out var linesCount))
     {
-        Console.WriteLine("File size in MB should be integer");
+        Console.WriteLine("Lines count should be long");
         return;
     }
 
-    if (fileSizeInMb < 0 || fileSizeInMb > 100_000)
+    if (linesCount < 0)
     {
-        Console.WriteLine("File size in MB should be more than 0 MB and less or equal to 100 GB");
+        Console.WriteLine("Lines count should be positive");
         return;
     }
 
-    var idGenerator = new IdGenerator();
-    var nameGenerator = new NameGenerator();
-    var stringGenerator = new StringGenerator(idGenerator, nameGenerator);
-    var fileInGb = fileSizeInMb > 1000;
-    var fileGenerator = fileInGb
-        ? new FileGenerator(stringGenerator, 10_000_000)
-        : new FileGenerator(stringGenerator);
+    var fileGenerator = new FileGenerator();
 
-    var fileName = fileInGb
-        ? $"{fileSizeInMb / 1000}GB.txt"
-        : $"{fileSizeInMb}MB.txt";
-    await fileGenerator.GenerateFileAsync(fileName, fileSizeInMb);
+    await fileGenerator.GenerateFileAsync($"{linesCount}.txt", linesCount);
 }
 else if (command == "sort")
 {

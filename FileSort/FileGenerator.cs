@@ -4,57 +4,37 @@ namespace FileSort;
 
 public sealed class FileGenerator
 {
-    private readonly StringGenerator _generator;
-    private readonly int _bufferSize;
+    private readonly Random _random = new();
 
-    public FileGenerator(StringGenerator generator, int bufferSize = 0)
+    private readonly string[] _cachedNames;
+
+    public FileGenerator(int cacheSize = 1000_000)
     {
-        if (bufferSize > 10_000_000)
-        {
-            throw new ArgumentException($"{nameof(bufferSize)} shouldn't be more than 10_000_000");
-        }
-        
-        _generator = generator;
-        _bufferSize = bufferSize;
+        _cachedNames = Enumerable.Range(0, cacheSize)
+            .Select(_ => new string(
+                Enumerable.Range(1, _random.Next(3, 100)).Select(_ => _random.Next(0, 2) == 0
+                    ? (char)_random.Next('a', 'z' + 1)
+                    : (char)_random.Next('A', 'Z' + 1)).ToArray()))
+            .ToArray();
     }
 
     public async Task GenerateFileAsync(
-        string fileName = "file.txt",
-        int fileSizeInMb = 1000,
+        string fileName,
+        long linesCount,
         CancellationToken ct = default)
     {
         await using var sw = new StreamWriter(fileName);
-        long previousFileSizeInMb = 0;
-        long currentFileSizeInMb;
 
-        var sb = new StringBuilder();
-        var strCount = 0;
-
-        do
+        for (var i = 0; i < linesCount; i++)
         {
             if (ct.IsCancellationRequested)
             {
                 return;
             }
             
-            var str = _generator.Get();
-            sb.AppendLine(str);
-            strCount++;
-
-            if (_bufferSize == 0 || strCount == _bufferSize)
-            {
-                await sw.WriteAsync(sb.ToString());
-                strCount = 0;
-                sb.Clear();
-            }
-            
-            var fileInfo = new FileInfo(fileName);
-            currentFileSizeInMb = fileInfo.ConvertToMegabytes();
-            if (previousFileSizeInMb != currentFileSizeInMb)
-            {   
-                Console.WriteLine($"Current file size in MB: {currentFileSizeInMb}");
-                previousFileSizeInMb = currentFileSizeInMb;
-            }
-        } while (currentFileSizeInMb < fileSizeInMb);
+            var id = _random.Next(0, int.MaxValue);
+            var name = _cachedNames[_random.Next(0, _cachedNames.Length)];
+            await sw.WriteLineAsync($"{id}. {name}");
+        }
     }
 }
