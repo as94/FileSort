@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileSort", "FileSort\FileSort.csproj", "{83AB65A7-733F-4005-9A6B-09C371B71922}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileSort.Tests", "FileSort.Tests\FileSort.Tests.csproj", "{9FB74D73-D146-435A-B519-4EA7A31A99D7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{83AB65A7-733F-4005-9A6B-09C371B71922}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83AB65A7-733F-4005-9A6B-09C371B71922}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83AB65A7-733F-4005-9A6B-09C371B71922}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83AB65A7-733F-4005-9A6B-09C371B71922}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FB74D73-D146-435A-B519-4EA7A31A99D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FB74D73-D146-435A-B519-4EA7A31A99D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FB74D73-D146-435A-B519-4EA7A31A99D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FB74D73-D146-435A-B519-4EA7A31A99D7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
