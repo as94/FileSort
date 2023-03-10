@@ -25,6 +25,7 @@ public sealed class FileGenerator
     {
         await using var sw = new StreamWriter(fileName);
 
+        var repeats = new List<string>(); 
         for (var i = 0; i < linesCount; i++)
         {
             if (ct.IsCancellationRequested)
@@ -34,6 +35,18 @@ public sealed class FileGenerator
             
             var id = _random.Next(0, int.MaxValue);
             var name = _cachedNames[_random.Next(0, _cachedNames.Length)];
+            
+            if (_random.Next(0, 10) == 0)
+            {
+                repeats.Add(name);
+            }
+
+            if (_random.Next(0, 20) == 0 && repeats.Count > 0)
+            {
+                name = repeats[0];
+                repeats.Remove(name);
+            }
+
             await sw.WriteLineAsync($"{id}. {name}");
         }
     }

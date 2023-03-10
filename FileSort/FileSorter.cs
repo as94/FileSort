@@ -31,8 +31,7 @@ public sealed class FileSorter
 
     }
 
-    private async Task CreateSmallFilesFromLargeAsync(
-        CancellationToken ct)
+    private async Task CreateSmallFilesFromLargeAsync(CancellationToken ct)
     {
         using var reader = File.OpenText(_filePath);
         var line = await reader.ReadLineAsync(ct);
