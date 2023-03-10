@@ -32,8 +32,7 @@ else if (command == "sort")
         return;
     }
 
-    var fileSort = new FileSorter(filePath);
-    await fileSort.SortAsync(CancellationToken.None);
+    await new FileSorter(filePath).SortAsync(CancellationToken.None);
 }
 else
 {
@@ -41,8 +40,7 @@ else
     return;
 }
 
-Console.WriteLine($"Elapsed in minutes: {sw.ElapsedMilliseconds / 1000 / 60}");
-Console.WriteLine($"Elapsed in seconds: {sw.ElapsedMilliseconds / 1000}");
+Console.WriteLine($"File name: {args[1]}");
 Console.WriteLine($"Elapsed in milliseconds: {sw.ElapsedMilliseconds}");
 
 

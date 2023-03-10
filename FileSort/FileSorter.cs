@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace FileSort;
 
 public sealed class FileSorter
@@ -5,7 +7,7 @@ public sealed class FileSorter
     private readonly string _filePath;
     private const string TmpDirectoryName = "tmp";
 
-    private const int LinesCountInSmallFile = 100_000_000;
+    private const int LinesCountInSmallFile = 10_000_000;
 
     public FileSorter(string filePath)
     {
@@ -21,8 +23,13 @@ public sealed class FileSorter
 
         try
         {
+            var sw = Stopwatch.StartNew();
             await CreateSmallFilesFromLargeAsync(ct);
+            Console.WriteLine($"Elapsed in milliseconds (CreateSmallFilesFromLargeAsync): {sw.ElapsedMilliseconds}");
+            
+            sw.Restart();
             await CreateSortedLargeFileAsync(ct);
+            Console.WriteLine($"Elapsed in milliseconds (CreateSortedLargeFileAsync): {sw.ElapsedMilliseconds}");
         }
         finally
         {
@@ -41,14 +48,15 @@ public sealed class FileSorter
 
         while (line != null)
         {
-            rows[rowsCount++] = new Row(line);
+            rows[rowsCount] = new Row(line);
+            rowsCount++;
 
             if (rowsCount == LinesCountInSmallFile)
             {
-                rowsCount = 0;
-                filesCount++;
-
                 await CreateSmallFileAsync(filesCount, rows);
+                filesCount++;
+                rowsCount = 0;
+                rows = new Row?[LinesCountInSmallFile];
             }
             
             line = await reader.ReadLineAsync(ct);
