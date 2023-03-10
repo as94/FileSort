@@ -2,12 +2,14 @@ using System.Text.RegularExpressions;
 
 namespace FileSort;
 
-public sealed class Row : IComparable<Row>
+readonly struct Row : IComparable<Row>
 {
     private readonly int _id;
     private readonly string _name;
     
     public string Value { get; }
+
+    public bool IsNull => _id == 0 && _name == null;
 
     public Row(string value)
     {
@@ -18,11 +20,8 @@ public sealed class Row : IComparable<Row>
         Value = value;
     }
 
-    public int CompareTo(Row? other)
+    public int CompareTo(Row other)
     {
-        if (ReferenceEquals(this, other)) return 0;
-        if (ReferenceEquals(null, other)) return 1;
-
         var nameComparison = string.Compare(_name, other._name, StringComparison.InvariantCulture);
         if (nameComparison != 0) return nameComparison;
         

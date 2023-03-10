@@ -42,7 +42,7 @@ public sealed class FileSorter
     {
         using var reader = File.OpenText(_filePath);
         var line = await reader.ReadLineAsync(ct);
-        var rows = new Row?[LinesCountInSmallFile];
+        var rows = new Row[LinesCountInSmallFile];
         var rowsCount = 0;
         var filesCount = 0;
 
@@ -56,7 +56,7 @@ public sealed class FileSorter
                 await CreateSmallFileAsync(filesCount, rows);
                 filesCount++;
                 rowsCount = 0;
-                rows = new Row?[LinesCountInSmallFile];
+                rows = new Row[LinesCountInSmallFile];
             }
             
             line = await reader.ReadLineAsync(ct);
@@ -68,11 +68,11 @@ public sealed class FileSorter
         }
     }
 
-    private static async Task CreateSmallFileAsync(int filesCount, Row?[] rows)
+    private static async Task CreateSmallFileAsync(int filesCount, Row[] rows)
     {
         var newFilePath = Path.Combine(TmpDirectoryName, $"file_{filesCount + 1}.txt");
         var sortedRows = rows
-            .Where(r => r != null)
+            .Where(r => !r.IsNull)
             .OrderBy(x => x)
             .Select(r => r!.Value);
 
@@ -130,7 +130,7 @@ public sealed class FileSorter
 
     private (int idx, string? row) GetNext(string?[] rows)
     {
-        Row minRow = null;
+        Row minRow = new Row();
         var idx = -1;
         for (var i = 0; i < rows.Length; i++)
         {
@@ -141,7 +141,7 @@ public sealed class FileSorter
             }
 
             var currentRow = new Row(row);
-            if (minRow == null)
+            if (minRow.IsNull)
             {
                 minRow = currentRow;
                 idx = i;
@@ -161,6 +161,6 @@ public sealed class FileSorter
             }
         }
 
-        return (idx, minRow?.Value);
+        return (idx, minRow.Value);
     }
 }
