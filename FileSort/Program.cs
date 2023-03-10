@@ -21,7 +21,7 @@ if (command == "generate")
 
     var fileGenerator = new FileGenerator();
 
-    await fileGenerator.GenerateFileAsync($"{linesCount}.txt", linesCount);
+    fileGenerator.GenerateFile($"{linesCount}.txt", linesCount);
 }
 else if (command == "sort")
 {
@@ -32,7 +32,7 @@ else if (command == "sort")
         return;
     }
 
-    await new FileSorter(filePath).SortAsync(CancellationToken.None);
+    new FileSorter(filePath).Sort();
 }
 else
 {

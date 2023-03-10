@@ -14,7 +14,7 @@ public sealed class FileSorter
         _filePath = filePath;
     }
     
-    public async Task SortAsync(CancellationToken ct)
+    public void Sort()
     {
         if (!Directory.Exists(TmpDirectoryName))
         {
@@ -24,12 +24,12 @@ public sealed class FileSorter
         try
         {
             var sw = Stopwatch.StartNew();
-            var newFilePaths = await CreateSmallFilesFromLargeAsync(ct);
-            Console.WriteLine($"Elapsed in milliseconds (CreateSmallFilesFromLargeAsync): {sw.ElapsedMilliseconds}");
+            var newFilePaths = CreateSmallFilesFromLarge();
+            Console.WriteLine($"Elapsed in milliseconds (CreateSmallFilesFromLarge): {sw.ElapsedMilliseconds}");
             
             sw.Restart();
-            await CreateSortedLargeFileAsync(newFilePaths, ct);
-            Console.WriteLine($"Elapsed in milliseconds (CreateSortedLargeFileAsync): {sw.ElapsedMilliseconds}");
+            CreateSortedLargeFile(newFilePaths);
+            Console.WriteLine($"Elapsed in milliseconds (CreateSortedLargeFile): {sw.ElapsedMilliseconds}");
         }
         finally
         {
@@ -38,7 +38,7 @@ public sealed class FileSorter
 
     }
 
-    private async Task<List<string>> CreateSmallFilesFromLargeAsync(CancellationToken ct)
+    private List<string> CreateSmallFilesFromLarge()
     {
         var newFilePaths = new List<string>();
         
@@ -54,7 +54,7 @@ public sealed class FileSorter
 
             if (rowsCount == LinesCountInSmallFile)
             {
-                var newFilePath = await CreateSmallFileAsync(filesCount, rows);
+                var newFilePath = CreateSmallFile(filesCount, rows);
                 newFilePaths.Add(newFilePath);
                 filesCount++;
                 rowsCount = 0;
@@ -64,27 +64,24 @@ public sealed class FileSorter
 
         if (rowsCount > 0)
         {
-            var newFilePath = await CreateSmallFileAsync(filesCount, rows);
+            Array.Resize(ref rows, rowsCount);
+            var newFilePath = CreateSmallFile(filesCount, rows);
             newFilePaths.Add(newFilePath);
         }
 
         return newFilePaths;
     }
 
-    private static async Task<string> CreateSmallFileAsync(int filesCount, Row[] rows)
+    private static string CreateSmallFile(int filesCount, Row[] rows)
     {
         var newFilePath = Path.Combine(TmpDirectoryName, $"file_{filesCount + 1}.txt");
-        var sortedRows = rows
-            .Where(r => !r.IsNull)
-            .OrderBy(x => x)
-            .Select(r => r!.Value);
-
-        await File.WriteAllLinesAsync(newFilePath, sortedRows);
+        Array.Sort(rows);
+        File.WriteAllLines(newFilePath, rows.Select(r => r.Value));
 
         return newFilePath;
     }
 
-    private async Task CreateSortedLargeFileAsync(List<string> files, CancellationToken ct)
+    private void CreateSortedLargeFile(List<string> files)
     {
         var resultFilePath = $"{Path.GetFileNameWithoutExtension(_filePath)}_SortResult.txt";
 
@@ -105,18 +102,18 @@ public sealed class FileSorter
             var currentRows = new string?[files.Count];
             for (var i = 0; i < readers.Length; i++)
             {
-                currentRows[i] = await readers[i].ReadLineAsync(ct);
+                currentRows[i] = readers[i].ReadLine();
             }
 
-            await using var resultFileWriter = new StreamWriter(resultFilePath);
+            using var resultFileWriter = new StreamWriter(resultFilePath);
 
             var (nextIdx, nextRow) = GetNext(currentRows);
 
             while (nextRow != null)
             {
-                await resultFileWriter.WriteLineAsync(nextRow);
+                resultFileWriter.WriteLine(nextRow);
             
-                currentRows[nextIdx] = await readers[nextIdx].ReadLineAsync(ct);
+                currentRows[nextIdx] = readers[nextIdx].ReadLine();
                 (nextIdx, nextRow) = GetNext(currentRows);
             }
         }

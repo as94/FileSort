@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace FileSort;
 
 public sealed class FileGenerator
@@ -18,22 +16,14 @@ public sealed class FileGenerator
             .ToArray();
     }
 
-    public async Task GenerateFileAsync(
-        string fileName,
-        long linesCount,
-        CancellationToken ct = default)
+    public void GenerateFile(string fileName, long linesCount)
     {
-        await using var sw = new StreamWriter(fileName);
+        using var sw = new StreamWriter(fileName);
 
         var repeatRandomMaxValue = linesCount / 1000_000 < 10 ? 10 : 100;
         var repeats = new List<string>(); 
         for (var i = 0; i < linesCount; i++)
         {
-            if (ct.IsCancellationRequested)
-            {
-                return;
-            }
-            
             var id = _random.Next(0, int.MaxValue);
             var name = _cachedNames[_random.Next(0, _cachedNames.Length)];
             
@@ -48,7 +38,7 @@ public sealed class FileGenerator
                 repeats.Remove(name);
             }
 
-            await sw.WriteLineAsync($"{id}. {name}");
+            sw.WriteLine($"{id}. {name}");
         }
     }
 }
