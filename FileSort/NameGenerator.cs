@@ -21,8 +21,8 @@ public sealed class NameGenerator : INameGenerator
         for (var i = 0; i < length; i++)
         {
             var symbol = _caseRandom.Next(0, 2) == 0
-                ? (char)_charRandom.Next('a', 'z')
-                : (char)_charRandom.Next('A', 'Z');
+                ? (char)_charRandom.Next('a', 'z' + 1)
+                : (char)_charRandom.Next('A', 'Z' + 1);
             
             sb.Append(symbol);
         }
