@@ -5,7 +5,7 @@ namespace FileSort;
 readonly struct Row : IComparable<Row>
 {
     private readonly int _id;
-    private readonly string _name;
+    private readonly string? _name;
     
     public string Value { get; }
 
@@ -23,7 +23,10 @@ readonly struct Row : IComparable<Row>
     public int CompareTo(Row other)
     {
         var nameComparison = string.Compare(_name, other._name, StringComparison.InvariantCulture);
-        if (nameComparison != 0) return nameComparison;
+        if (nameComparison != 0)
+        {
+            return nameComparison;
+        }
         
         return _id.CompareTo(other._id);
     }
