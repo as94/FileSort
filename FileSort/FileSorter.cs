@@ -1,11 +1,13 @@
 namespace FileSort;
 
-public sealed class FileSort
+public sealed class FileSorter
 {
     private readonly string _filePath;
     private const string TmpDirectoryName = "tmp";
 
-    public FileSort(string filePath)
+    private const int LinesCountInSmallFile = 100_000_000;
+
+    public FileSorter(string filePath)
     {
         _filePath = filePath;
     }
@@ -19,7 +21,7 @@ public sealed class FileSort
 
         try
         {
-            await SplitToSmallFilesAsync(ct);
+            await CreateSmallFilesFromLargeAsync(ct);
             await CreateSortedLargeFileAsync(ct);
         }
         finally
@@ -29,33 +31,12 @@ public sealed class FileSort
 
     }
 
-    private async Task SplitToSmallFilesAsync(CancellationToken ct)
-    {
-        var linesCountInLargeFile = await GetLinesCountAsync(ct);
-        var linesCountInSmallFile = linesCountInLargeFile / 10;
-
-        await CreateSmallFileFromLargeAsync(linesCountInSmallFile, ct);
-    }
-
-    private async Task<long> GetLinesCountAsync(CancellationToken ct)
-    {
-        long lineCount = 0;
-        using var reader = File.OpenText(_filePath);
-        while (await reader.ReadLineAsync(ct) != null)
-        {
-            lineCount++;
-        }
-
-        return lineCount;
-    }
-
-    private async Task CreateSmallFileFromLargeAsync(
-        long linesCountInSmallFile,
+    private async Task CreateSmallFilesFromLargeAsync(
         CancellationToken ct)
     {
         using var reader = File.OpenText(_filePath);
         var line = await reader.ReadLineAsync(ct);
-        var rows = new Row[linesCountInSmallFile];
+        var rows = new Row?[LinesCountInSmallFile];
         var rowsCount = 0;
         var filesCount = 0;
 
@@ -63,53 +44,80 @@ public sealed class FileSort
         {
             rows[rowsCount++] = new Row(line);
 
-            if (rowsCount == linesCountInSmallFile)
+            if (rowsCount == LinesCountInSmallFile)
             {
                 rowsCount = 0;
                 filesCount++;
 
-                var newFilePath = Path.Combine(TmpDirectoryName, $"file_{filesCount + 1}.txt");
-                await using var newFile = File.OpenWrite(newFilePath);
-                await using var writer = new StreamWriter(newFile);
-
-                foreach (var r in rows.OrderBy(x => x))
-                {
-                    await writer.WriteLineAsync(r.Value);
-                }
+                await CreateSmallFileAsync(filesCount, rows);
             }
             
             line = await reader.ReadLineAsync(ct);
+        }
+
+        if (rowsCount > 0)
+        {
+            await CreateSmallFileAsync(filesCount, rows);
+        }
+    }
+
+    private static async Task CreateSmallFileAsync(int filesCount, Row?[] rows)
+    {
+        var newFilePath = Path.Combine(TmpDirectoryName, $"file_{filesCount + 1}.txt");
+        await using var writer = new StreamWriter(newFilePath);
+
+        foreach (var r in rows.Where(r => r != null).OrderBy(x => x))
+        {
+            await writer.WriteLineAsync(r!.Value);
         }
     }
 
     private async Task CreateSortedLargeFileAsync(CancellationToken ct)
     {
+        var resultFilePath = $"{Path.GetFileNameWithoutExtension(_filePath)}_SortResult.txt";
+        
         var files = Directory.GetFiles(TmpDirectoryName)
             .OrderBy(x => x)
             .ToArray();
-        var readers = new StreamReader[files.Length];
-        for (var i = 0; i < files.Length; i++)
+
+        if (files.Length == 1)
         {
-            readers[i] = new StreamReader(File.OpenRead(files[i]));
+            File.Copy(files[0], resultFilePath);
+            return;
         }
         
-        var currentRows = new string?[files.Length];
-        for (var i = 0; i < readers.Length; i++)
+        var readers = new StreamReader[files.Length];
+        try
         {
-            currentRows[i] = await readers[i].ReadLineAsync(ct);
-        }
+            for (var i = 0; i < files.Length; i++)
+            {
+                readers[i] = new StreamReader(File.OpenRead(files[i]));
+            }
+        
+            var currentRows = new string?[files.Length];
+            for (var i = 0; i < readers.Length; i++)
+            {
+                currentRows[i] = await readers[i].ReadLineAsync(ct);
+            }
 
-        await using var resultFile = File.OpenWrite($"{Path.GetFileNameWithoutExtension(_filePath)}_SortResult.txt");
-        await using var resultFileWriter = new StreamWriter(resultFile);
+            await using var resultFileWriter = new StreamWriter(resultFilePath);
 
-        var (nextIdx, nextRow) = GetNext(currentRows);
+            var (nextIdx, nextRow) = GetNext(currentRows);
 
-        while (nextRow != null)
-        {
-            await resultFileWriter.WriteLineAsync(nextRow);
+            while (nextRow != null)
+            {
+                await resultFileWriter.WriteLineAsync(nextRow);
             
-            currentRows[nextIdx] = await readers[nextIdx].ReadLineAsync(ct);
-            (nextIdx, nextRow) = GetNext(currentRows);
+                currentRows[nextIdx] = await readers[nextIdx].ReadLineAsync(ct);
+                (nextIdx, nextRow) = GetNext(currentRows);
+            }
+        }
+        finally
+        {
+            foreach (var reader in readers)
+            {
+                reader.Dispose();
+            }
         }
     }
 

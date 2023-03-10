@@ -23,8 +23,7 @@ public sealed class FileGenerator
         int fileSizeInMb = 1000,
         CancellationToken ct = default)
     {
-        await using var file = File.Open(fileName, FileMode.OpenOrCreate);
-        await using var sw = new StreamWriter(file);
+        await using var sw = new StreamWriter(fileName);
         long previousFileSizeInMb = 0;
         long currentFileSizeInMb;
 

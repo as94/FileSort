@@ -42,7 +42,7 @@ else if (command == "sort")
         return;
     }
 
-    var fileSort = new FileSort.FileSort(filePath);
+    var fileSort = new FileSorter(filePath);
     await fileSort.SortAsync(CancellationToken.None);
 }
 else

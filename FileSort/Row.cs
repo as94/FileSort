@@ -7,7 +7,7 @@ public sealed class Row : IComparable<Row>
     private readonly int _id;
     private readonly string _name;
 
-    private static readonly Regex ValidationRegex = new Regex(@"^\d+\. \w+$");
+    private static readonly Regex ValidationRegex = new(@"^\d+\. \w+$");
     
     public string Value { get; }
 
