@@ -1,6 +1,6 @@
 namespace FileSort;
 
-public sealed class FileGenerator
+internal sealed class FileGenerator
 {
     private readonly Random _random = new();
 

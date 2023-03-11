@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace FileSort;
 
-public sealed class FileSorter
+internal sealed class FileSorter
 {
     private readonly string _filePath;
     private const string TmpDirectoryName = "tmp";
@@ -49,7 +49,7 @@ public sealed class FileSorter
         var lines = File.ReadLines(_filePath);
         foreach (var line in lines)
         {
-            rows[rowsCount] = new Row(line);
+            rows[rowsCount] = Row.Create(line);
             rowsCount++;
 
             if (rowsCount == LinesCountInSmallFile)
@@ -76,7 +76,7 @@ public sealed class FileSorter
     {
         var newFilePath = Path.Combine(TmpDirectoryName, $"file_{filesCount + 1}.txt");
         Array.Sort(rows);
-        File.WriteAllLines(newFilePath, rows.Select(r => r.Value));
+        File.WriteAllLines(newFilePath, rows.Where(r => !r.IsNull).Select(r => r.Value!));
 
         return newFilePath;
     }
@@ -92,29 +92,26 @@ public sealed class FileSorter
         }
         
         var readers = new StreamReader[files.Count];
+        var smallFileRows = new SmallFileRow[files.Count];
         try
         {
             for (var i = 0; i < files.Count; i++)
             {
-                readers[i] = new StreamReader(files[i]);
-            }
-        
-            var currentRows = new string?[files.Count];
-            for (var i = 0; i < readers.Length; i++)
-            {
-                currentRows[i] = readers[i].ReadLine();
+                var reader = new StreamReader(files[i]);
+                readers[i] = reader;
+
+                smallFileRows[i] = new SmallFileRow(Row.Create(reader.ReadLine()), reader);
             }
 
             using var resultFileWriter = new StreamWriter(resultFilePath);
 
-            var (nextIdx, nextRow) = GetNext(currentRows);
+            var min = smallFileRows.MinBy(x => x.Row);
 
-            while (nextRow != null)
+            while (min is { Row.IsNull: false })
             {
-                resultFileWriter.WriteLine(nextRow);
-            
-                currentRows[nextIdx] = readers[nextIdx].ReadLine();
-                (nextIdx, nextRow) = GetNext(currentRows);
+                resultFileWriter.WriteLine(min.Row);
+
+                min.Row = Row.Create(min.Reader.ReadLine());
             }
         }
         finally
@@ -124,41 +121,5 @@ public sealed class FileSorter
                 reader.Dispose();
             }
         }
-    }
-
-    private (int idx, string? row) GetNext(string?[] rows)
-    {
-        Row minRow = new Row();
-        var idx = -1;
-        for (var i = 0; i < rows.Length; i++)
-        {
-            var row = rows[i];
-            if (row == null)
-            {
-                continue;
-            }
-
-            var currentRow = new Row(row);
-            if (minRow.IsNull)
-            {
-                minRow = currentRow;
-                idx = i;
-                continue;
-            }
-
-            var comparison = Comparer<Row>.Default.Compare(minRow, currentRow);
-            if (comparison == 0 || comparison == -1)
-            {
-                continue;
-            }
-            
-            if (comparison == 1)
-            {
-                minRow = currentRow;
-                idx = i;
-            }
-        }
-
-        return (idx, minRow.Value);
     }
 }
