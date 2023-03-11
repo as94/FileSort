@@ -13,7 +13,7 @@ internal sealed class FileSorter
     {
         _filePath = filePath;
     }
-    
+
     public void Sort()
     {
         if (!Directory.Exists(TmpDirectoryName))
@@ -26,7 +26,7 @@ internal sealed class FileSorter
             var sw = Stopwatch.StartNew();
             var newFilePaths = CreateSmallFilesFromLarge();
             Console.WriteLine($"Elapsed in milliseconds (CreateSmallFilesFromLarge): {sw.ElapsedMilliseconds}");
-            
+
             sw.Restart();
             CreateSortedLargeFile(newFilePaths);
             Console.WriteLine($"Elapsed in milliseconds (CreateSortedLargeFile): {sw.ElapsedMilliseconds}");
@@ -35,17 +35,16 @@ internal sealed class FileSorter
         {
             Directory.Delete(TmpDirectoryName, true);
         }
-
     }
 
     private List<string> CreateSmallFilesFromLarge()
     {
         var newFilePaths = new List<string>();
-        
+
         var rows = new Row[LinesCountInSmallFile];
         var rowsCount = 0;
         var filesCount = 0;
-        
+
         var lines = File.ReadLines(_filePath);
         foreach (var line in lines)
         {
@@ -90,9 +89,9 @@ internal sealed class FileSorter
             File.Copy(files[0], resultFilePath);
             return;
         }
-        
+
         var readers = new StreamReader[files.Count];
-        var smallFileRows = new SmallFileRow[files.Count];
+        var smallFileRows = new List<SmallFileRow>(files.Count);
         try
         {
             for (var i = 0; i < files.Count; i++)
@@ -100,18 +99,28 @@ internal sealed class FileSorter
                 var reader = new StreamReader(files[i]);
                 readers[i] = reader;
 
-                smallFileRows[i] = new SmallFileRow(Row.Create(reader.ReadLine()), reader);
+                smallFileRows.Add(new SmallFileRow(Row.Create(reader.ReadLine()), reader));
             }
 
             using var resultFileWriter = new StreamWriter(resultFilePath);
 
-            var min = smallFileRows.MinBy(x => x.Row);
-
-            while (min is { Row.IsNull: false })
+            while (smallFileRows.Count > 0)
             {
-                resultFileWriter.WriteLine(min.Row);
+                var min = smallFileRows.MinBy(x => x.Row);
+                if (min == null)
+                {
+                    break;
+                }
+
+                resultFileWriter.WriteLine(min.Row.Value);
 
                 min.Row = Row.Create(min.Reader.ReadLine());
+                min = smallFileRows.MinBy(x => x.Row);
+
+                if (min!.Row.IsNull)
+                {
+                    smallFileRows.Remove(min);
+                }
             }
         }
         finally
