@@ -10,6 +10,7 @@ internal sealed class ChunkSorter
     private const int FileBufferSize = 1024 * 1024; // 1 Mb
 
     private readonly long _maxChunkBytes;
+    private readonly int _maxParallelism;
 
     private readonly SemaphoreSlim _semaphore;
     private readonly string _tempDir;
@@ -18,6 +19,7 @@ internal sealed class ChunkSorter
     {
         _maxChunkBytes = maxChunkBytes;
         _tempDir = tempDir;
+        _maxParallelism = maxParallelism;
         _semaphore = new SemaphoreSlim(maxParallelism, maxParallelism);
     }
 
@@ -58,19 +60,21 @@ internal sealed class ChunkSorter
                 buffer = ArrayPool<LineRecord>.Shared.Rent(LineRecordBufferSize);
                 bufferCount = 0;
                 currentBytes = 0;
+
+                if (tasks.Count >= _maxParallelism)
+                {
+                    var finished = await Task.WhenAny(tasks);
+                    tasks.Remove(finished);
+                }
             }
         }
 
         if (bufferCount > 0)
         {
-            var chunk = buffer;
-            var count = bufferCount;
-            tasks.Add(FlushChunkAsync(chunk, count, chunkIndex++, chunkFiles));
+            tasks.Add(FlushChunkAsync(buffer, bufferCount, chunkIndex++, chunkFiles));
         }
 
         await Task.WhenAll(tasks);
-
-        ArrayPool<LineRecord>.Shared.Return(buffer, true);
 
         return chunkFiles
             .OrderBy(x => x)
