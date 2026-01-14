@@ -1,13 +1,27 @@
-using System.Text;
+using Sorter.Algorithms;
+using Sorter.IO;
 
 namespace Sorter;
 
 internal sealed class ExternalMerger
 {
     private readonly Defaults _defaults;
+    private readonly IMergeAlgorithm<LineRecord> _mergeAlgorithm;
+    private readonly ILineReader<LineRecord> _reader;
+    private readonly ITempFileProvider _tempFileProvider;
+    private readonly ILineWriter<LineRecord> _writer;
 
-    public ExternalMerger(Defaults defaults)
+    public ExternalMerger(
+        IMergeAlgorithm<LineRecord> mergeAlgorithm,
+        ILineReader<LineRecord> reader,
+        ILineWriter<LineRecord> writer,
+        ITempFileProvider tempFileProvider,
+        Defaults defaults)
     {
+        _mergeAlgorithm = mergeAlgorithm;
+        _reader = reader;
+        _writer = writer;
+        _tempFileProvider = tempFileProvider;
         _defaults = defaults;
     }
 
@@ -28,9 +42,8 @@ internal sealed class ExternalMerger
                     .Take(_defaults.MaxMergeFiles)
                     .ToList();
 
-                var output = Path.Combine(
-                    _defaults.TempDir,
-                    $"merge_r{round}_{i / _defaults.MaxMergeFiles}.txt");
+                var output =
+                    _tempFileProvider.CreateMergeOutput(round, i / _defaults.MaxMergeFiles);
 
                 MergeChunks(group, output);
                 nextRound.Add(output);
@@ -38,78 +51,19 @@ internal sealed class ExternalMerger
 
             foreach (var file in current)
             {
-                File.Delete(file);
+                _tempFileProvider.Delete(file);
             }
 
             current = nextRound;
         }
 
-        File.Move(current[0], _defaults.SortedFileName, true);
+        _tempFileProvider.MoveToFinal(current[0], _defaults.SortedFileName);
     }
 
     public void MergeChunks(IReadOnlyList<string> chunks, string outputFile)
     {
-        var readers = new List<StreamReader>();
-        try
-        {
-            var pq = new PriorityQueue<MergeItem, LineRecord>();
-
-            foreach (var chunk in chunks)
-            {
-                var reader = new StreamReader(
-                    new FileStream(chunk, FileMode.Open, FileAccess.Read, FileShare.Read,
-                        _defaults.FileBufferSize),
-                    Encoding.UTF8);
-
-                readers.Add(reader);
-
-                var line = reader.ReadLine();
-                if (line != null)
-                {
-                    var record = LineRecord.Parse(line);
-                    var mergeItem = new MergeItem(record, reader);
-
-                    pq.Enqueue(mergeItem, record);
-                }
-            }
-
-            using var writer = new StreamWriter(
-                new FileStream(outputFile, FileMode.Create, FileAccess.Write, FileShare.None,
-                    _defaults.FileBufferSize),
-                Encoding.UTF8);
-
-            while (pq.Count > 0)
-            {
-                var item = pq.Dequeue();
-                writer.WriteLine(item.Record.ToString());
-
-                var nextLine = item.Reader.ReadLine();
-                if (nextLine != null)
-                {
-                    var next = LineRecord.Parse(nextLine);
-                    var mergeItem = new MergeItem(next, item.Reader);
-                    pq.Enqueue(mergeItem, next);
-                }
-            }
-        }
-        finally
-        {
-            foreach (var r in readers)
-            {
-                r.Dispose();
-            }
-        }
-    }
-
-    private sealed class MergeItem
-    {
-        public MergeItem(LineRecord record, StreamReader reader)
-        {
-            Record = record;
-            Reader = reader;
-        }
-
-        public LineRecord Record { get; }
-        public StreamReader Reader { get; }
+        var sources = chunks.Select(_reader.Read).ToList();
+        var merged = _mergeAlgorithm.Merge(sources);
+        _writer.Write(outputFile, merged);
     }
 }

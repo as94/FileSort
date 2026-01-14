@@ -1,17 +1,22 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Text;
+using Sorter.Algorithms;
 
 namespace Sorter;
 
 internal sealed class ChunkSorter
 {
+    private readonly IChunkSortAlgorithm<LineRecord> _chunkSortAlgorithm;
     private readonly Defaults _defaults;
 
     private readonly SemaphoreSlim _semaphore;
 
-    public ChunkSorter(Defaults defaults)
+    public ChunkSorter(
+        IChunkSortAlgorithm<LineRecord> chunkSortAlgorithm,
+        Defaults defaults)
     {
+        _chunkSortAlgorithm = chunkSortAlgorithm;
         _defaults = defaults;
         _semaphore = new SemaphoreSlim(_defaults.MaxParallelism, _defaults.MaxParallelism);
     }
@@ -82,7 +87,7 @@ internal sealed class ChunkSorter
 
         try
         {
-            Array.Sort(records, 0, bufferCount);
+            _chunkSortAlgorithm.Sort(records, bufferCount);
 
             var chunkFile = Path.Combine(_defaults.TempDir, $"chunk_{index}.txt");
             await using var writer = new StreamWriter(

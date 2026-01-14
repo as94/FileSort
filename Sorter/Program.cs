@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
 using Sorter;
+using Sorter.Algorithms;
+using Sorter.IO;
 
 var defaults = Defaults.Production;
 
@@ -22,7 +24,9 @@ Console.WriteLine();
 Console.WriteLine("[Phase 1] Split & Sort started...");
 var sw = Stopwatch.StartNew();
 
-var chunkSorter = new ChunkSorter(defaults);
+var chunkSorter = new ChunkSorter(
+    new ArrayChunkSortAlgorithm<LineRecord>(),
+    defaults);
 
 var chunks = await chunkSorter.SplitAndSortAsync(inputFile);
 
@@ -35,7 +39,12 @@ Console.WriteLine();
 Console.WriteLine("[Phase 2] Merge started...");
 sw.Restart();
 
-var merger = new ExternalMerger(defaults);
+var merger = new ExternalMerger(
+    new KWayMergeAlgorithm<LineRecord>(),
+    new FileLineReader(defaults),
+    new FileLineWriter(defaults),
+    new FileTempFileProvider(defaults),
+    defaults);
 
 merger.MergeAllChunks(chunks);
 
