@@ -4,7 +4,52 @@ namespace Sorter;
 
 internal sealed class ExternalMerger
 {
-    public void Merge(IReadOnlyList<string> chunks, string outputFile)
+    private readonly int _maxMergeFiles;
+    private readonly string _tempDir;
+
+    public ExternalMerger(int maxMergeFiles, string tempDir)
+    {
+        _maxMergeFiles = maxMergeFiles;
+        _tempDir = tempDir;
+    }
+
+    public void MergeAllChunks(IReadOnlyList<string> initialChunks, string resultFilePath)
+    {
+        var round = 0;
+        var current = initialChunks;
+
+        while (current.Count > 1)
+        {
+            var nextRound = new List<string>();
+            round++;
+
+            for (var i = 0; i < current.Count; i += _maxMergeFiles)
+            {
+                var group = current
+                    .Skip(i)
+                    .Take(_maxMergeFiles)
+                    .ToList();
+
+                var output = Path.Combine(
+                    _tempDir,
+                    $"merge_r{round}_{i / _maxMergeFiles}.txt");
+
+                MergeChunks(group, output);
+                nextRound.Add(output);
+            }
+
+            foreach (var file in current)
+            {
+                File.Delete(file);
+            }
+
+            current = nextRound;
+        }
+
+        File.Move(current[0], resultFilePath, true);
+    }
+
+    public void MergeChunks(IReadOnlyList<string> chunks, string outputFile)
     {
         var readers = new List<StreamReader>();
         try

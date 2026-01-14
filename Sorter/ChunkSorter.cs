@@ -77,7 +77,6 @@ internal sealed class ChunkSorter
         await Task.WhenAll(tasks);
 
         return chunkFiles
-            .OrderBy(x => x)
             .ToList()
             .AsReadOnly();
     }

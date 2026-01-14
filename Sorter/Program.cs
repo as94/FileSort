@@ -13,20 +13,16 @@ if (!File.Exists(inputFile))
     Console.WriteLine("Input file path does not exist");
 }
 
-var tempDir = "tmp";
-var outputFile = "sorted.txt";
-
 Console.WriteLine("=== External File Sort ===");
 Console.WriteLine($"Input : {inputFile}");
-Console.WriteLine($"Output: {outputFile}");
 Console.WriteLine();
 
 Console.WriteLine("[Phase 1] Split & Sort started...");
 var sw = Stopwatch.StartNew();
 
 var chunkSorter = new ChunkSorter(
-    512L * 1024 * 1024, // 512 MB
-    tempDir,
+    Defaults.MaxChunkBytes,
+    Defaults.TempDir,
     Environment.ProcessorCount
 );
 
@@ -41,13 +37,16 @@ Console.WriteLine();
 Console.WriteLine("[Phase 2+] Merge started...");
 sw.Restart();
 
-var merger = new ExternalMerger();
-merger.Merge(chunks, outputFile);
+var merger = new ExternalMerger(
+    Defaults.MaxMergeFiles,
+    Defaults.TempDir);
+
+var resultFilePath = Path.Combine(Defaults.TempDir, Defaults.SortedFileName);
+merger.MergeAllChunks(chunks, resultFilePath);
 
 sw.Stop();
 Console.WriteLine("[Phase 2+] Done");
 Console.WriteLine($"-- Time: {sw.Elapsed}");
 Console.WriteLine();
 
-Directory.Delete(tempDir, true);
 Console.WriteLine("=== Finished successfully ===");
