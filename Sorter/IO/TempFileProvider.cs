@@ -1,10 +1,10 @@
 namespace Sorter.IO;
 
-public sealed class FileTempFileProvider : ITempFileProvider
+public sealed class TempFileProvider : ITempFileProvider
 {
     private readonly Defaults _defaults;
 
-    public FileTempFileProvider(Defaults defaults)
+    public TempFileProvider(Defaults defaults)
     {
         _defaults = defaults;
     }

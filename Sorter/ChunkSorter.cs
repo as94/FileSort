@@ -2,53 +2,45 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Text;
 using Sorter.Algorithms;
+using Sorter.IO;
 
 namespace Sorter;
 
-internal sealed class ChunkSorter
+public sealed class ChunkSorter
 {
     private readonly IChunkSortAlgorithm<LineRecord> _chunkSortAlgorithm;
     private readonly Defaults _defaults;
+    private readonly ILineReader<LineRecord> _reader;
 
     private readonly SemaphoreSlim _semaphore;
+    private readonly ILineWriter<LineRecord> _writer;
 
     public ChunkSorter(
         IChunkSortAlgorithm<LineRecord> chunkSortAlgorithm,
+        ILineReader<LineRecord> reader,
+        ILineWriter<LineRecord> writer,
         Defaults defaults)
     {
         _chunkSortAlgorithm = chunkSortAlgorithm;
+        _reader = reader;
+        _writer = writer;
         _defaults = defaults;
         _semaphore = new SemaphoreSlim(_defaults.MaxParallelism, _defaults.MaxParallelism);
     }
 
     public async Task<IReadOnlyList<string>> SplitAndSortAsync(string inputFile)
     {
-        Directory.CreateDirectory(_defaults.TempDir);
-
         var chunkFiles = new ConcurrentBag<string>();
         var buffer = ArrayPool<LineRecord>.Shared.Rent(_defaults.ChunkSorterBufferSize);
         var bufferCount = 0;
         long currentBytes = 0;
         var chunkIndex = 0;
 
-        using var reader = new StreamReader(
-            new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read,
-                _defaults.FileBufferSize),
-            Encoding.UTF8);
-
         var tasks = new List<Task>();
-        while (true)
+        foreach (var record in _reader.Read(inputFile))
         {
-            // ReSharper disable once MethodHasAsyncOverload
-            var line = reader.ReadLine();
-            if (line == null)
-            {
-                break;
-            }
-
-            var record = LineRecord.Parse(line);
             buffer[bufferCount++] = record;
-            currentBytes += Encoding.UTF8.GetByteCount(line);
+            currentBytes += Encoding.UTF8.GetByteCount(record.ToString());
 
             if (currentBytes >= _defaults.MaxChunkBytes || bufferCount >= buffer.Length)
             {
@@ -90,15 +82,9 @@ internal sealed class ChunkSorter
             _chunkSortAlgorithm.Sort(records, bufferCount);
 
             var chunkFile = Path.Combine(_defaults.TempDir, $"chunk_{index}.txt");
-            await using var writer = new StreamWriter(
-                new FileStream(chunkFile, FileMode.Create, FileAccess.Write, FileShare.None,
-                    _defaults.FileBufferSize),
-                Encoding.UTF8);
+            var path = Path.Combine(_defaults.TempDir, $"chunk_{index}.txt");
 
-            for (var i = 0; i < bufferCount; i++)
-            {
-                await writer.WriteLineAsync(records[i].ToString());
-            }
+            _writer.Write(path, records.AsSpan(0, bufferCount).ToArray());
 
             chunkFiles.Add(chunkFile);
         }

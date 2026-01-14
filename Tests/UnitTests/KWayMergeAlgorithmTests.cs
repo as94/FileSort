@@ -26,8 +26,6 @@ public class KWayMergeAlgorithmTests
         var algo = new KWayMergeAlgorithm<LineRecord>();
         var result = algo.Merge(sources).ToList();
 
-        result.Should()
-            .BeInAscendingOrder(x => x.Text)
-            .And.ThenBeInAscendingOrder(x => x.Number);
+        result.Should().BeInAscendingOrder();
     }
 }

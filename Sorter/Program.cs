@@ -5,6 +5,8 @@ using Sorter.IO;
 
 var defaults = Defaults.Production;
 
+Directory.CreateDirectory(defaults.TempDir);
+
 if (args.Length == 0)
 {
     Console.WriteLine("Input file path is not specified");
@@ -21,11 +23,17 @@ Console.WriteLine("=== External File Sort ===");
 Console.WriteLine($"Input : {inputFile}");
 Console.WriteLine();
 
+var reader = new FileLineReader(defaults);
+var writer = new FileLineWriter(defaults);
+
 Console.WriteLine("[Phase 1] Split & Sort started...");
 var sw = Stopwatch.StartNew();
 
+var chunkSortAlgorithm = new ArrayChunkSortAlgorithm<LineRecord>();
 var chunkSorter = new ChunkSorter(
-    new ArrayChunkSortAlgorithm<LineRecord>(),
+    chunkSortAlgorithm,
+    reader,
+    writer,
     defaults);
 
 var chunks = await chunkSorter.SplitAndSortAsync(inputFile);
@@ -39,11 +47,13 @@ Console.WriteLine();
 Console.WriteLine("[Phase 2] Merge started...");
 sw.Restart();
 
+var mergeAlgorithm = new KWayMergeAlgorithm<LineRecord>();
+var tempFileProvider = new TempFileProvider(defaults);
 var merger = new ExternalMerger(
-    new KWayMergeAlgorithm<LineRecord>(),
-    new FileLineReader(defaults),
-    new FileLineWriter(defaults),
-    new FileTempFileProvider(defaults),
+    mergeAlgorithm,
+    reader,
+    writer,
+    tempFileProvider,
     defaults);
 
 merger.MergeAllChunks(chunks);
@@ -53,5 +63,4 @@ Console.WriteLine("[Phase 2] Done");
 Console.WriteLine($"-- Time: {sw.Elapsed}");
 Console.WriteLine();
 
-Directory.Delete(defaults.TempDir);
 Console.WriteLine("=== Finished successfully ===");

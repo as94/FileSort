@@ -3,7 +3,7 @@ using Sorter.IO;
 
 namespace Sorter;
 
-internal sealed class ExternalMerger
+public sealed class ExternalMerger
 {
     private readonly Defaults _defaults;
     private readonly IMergeAlgorithm<LineRecord> _mergeAlgorithm;

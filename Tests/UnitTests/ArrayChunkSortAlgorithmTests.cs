@@ -19,8 +19,6 @@ public class ArrayChunkSortAlgorithmTests
         var algo = new ArrayChunkSortAlgorithm<LineRecord>();
         algo.Sort(buffer, buffer.Length);
 
-        buffer.Should()
-            .BeInAscendingOrder(x => x.Text)
-            .And.ThenBeInAscendingOrder(x => x.Number);
+        buffer.Should().BeInAscendingOrder();
     }
 }
