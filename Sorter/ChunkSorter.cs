@@ -7,7 +7,6 @@ namespace Sorter;
 internal sealed class ChunkSorter
 {
     private const int LineRecordBufferSize = 1000_000;
-    private const int FileBufferSize = 1024 * 1024; // 1 Mb
 
     private readonly long _maxChunkBytes;
     private readonly int _maxParallelism;
@@ -23,7 +22,7 @@ internal sealed class ChunkSorter
         _semaphore = new SemaphoreSlim(maxParallelism, maxParallelism);
     }
 
-    public async Task<List<string>> SplitAndSortAsync(string inputFile)
+    public async Task<IReadOnlyList<string>> SplitAndSortAsync(string inputFile)
     {
         Directory.CreateDirectory(_tempDir);
 
@@ -35,13 +34,14 @@ internal sealed class ChunkSorter
 
         using var reader = new StreamReader(
             new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read,
-                FileBufferSize),
+                Defaults.FileBufferSize),
             Encoding.UTF8);
 
         var tasks = new List<Task>();
         while (true)
         {
-            var line = await reader.ReadLineAsync();
+            // ReSharper disable once MethodHasAsyncOverload
+            var line = reader.ReadLine();
             if (line == null)
             {
                 break;
@@ -78,7 +78,8 @@ internal sealed class ChunkSorter
 
         return chunkFiles
             .OrderBy(x => x)
-            .ToList();
+            .ToList()
+            .AsReadOnly();
     }
 
     private async Task FlushChunkAsync(LineRecord[] records, int bufferCount, int index,
@@ -93,7 +94,7 @@ internal sealed class ChunkSorter
             var chunkFile = Path.Combine(_tempDir, $"chunk_{index}.txt");
             await using var writer = new StreamWriter(
                 new FileStream(chunkFile, FileMode.Create, FileAccess.Write, FileShare.None,
-                    FileBufferSize),
+                    Defaults.FileBufferSize),
                 Encoding.UTF8);
 
             for (var i = 0; i < bufferCount; i++)
