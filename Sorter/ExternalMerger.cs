@@ -4,16 +4,14 @@ namespace Sorter;
 
 internal sealed class ExternalMerger
 {
-    private readonly int _maxMergeFiles;
-    private readonly string _tempDir;
+    private readonly Defaults _defaults;
 
-    public ExternalMerger(int maxMergeFiles, string tempDir)
+    public ExternalMerger(Defaults defaults)
     {
-        _maxMergeFiles = maxMergeFiles;
-        _tempDir = tempDir;
+        _defaults = defaults;
     }
 
-    public void MergeAllChunks(IReadOnlyList<string> initialChunks, string resultFilePath)
+    public void MergeAllChunks(IReadOnlyList<string> initialChunks)
     {
         var round = 0;
         var current = initialChunks;
@@ -23,16 +21,16 @@ internal sealed class ExternalMerger
             var nextRound = new List<string>();
             round++;
 
-            for (var i = 0; i < current.Count; i += _maxMergeFiles)
+            for (var i = 0; i < current.Count; i += _defaults.MaxMergeFiles)
             {
                 var group = current
                     .Skip(i)
-                    .Take(_maxMergeFiles)
+                    .Take(_defaults.MaxMergeFiles)
                     .ToList();
 
                 var output = Path.Combine(
-                    _tempDir,
-                    $"merge_r{round}_{i / _maxMergeFiles}.txt");
+                    _defaults.TempDir,
+                    $"merge_r{round}_{i / _defaults.MaxMergeFiles}.txt");
 
                 MergeChunks(group, output);
                 nextRound.Add(output);
@@ -46,7 +44,7 @@ internal sealed class ExternalMerger
             current = nextRound;
         }
 
-        File.Move(current[0], resultFilePath, true);
+        File.Move(current[0], _defaults.SortedFileName, true);
     }
 
     public void MergeChunks(IReadOnlyList<string> chunks, string outputFile)
@@ -60,7 +58,7 @@ internal sealed class ExternalMerger
             {
                 var reader = new StreamReader(
                     new FileStream(chunk, FileMode.Open, FileAccess.Read, FileShare.Read,
-                        Defaults.FileBufferSize),
+                        _defaults.FileBufferSize),
                     Encoding.UTF8);
 
                 readers.Add(reader);
@@ -77,7 +75,7 @@ internal sealed class ExternalMerger
 
             using var writer = new StreamWriter(
                 new FileStream(outputFile, FileMode.Create, FileAccess.Write, FileShare.None,
-                    Defaults.FileBufferSize),
+                    _defaults.FileBufferSize),
                 Encoding.UTF8);
 
             while (pq.Count > 0)

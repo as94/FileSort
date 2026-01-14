@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using Sorter;
 
+var defaults = Defaults.Production;
+
 if (args.Length == 0)
 {
     Console.WriteLine("Input file path is not specified");
@@ -20,11 +22,7 @@ Console.WriteLine();
 Console.WriteLine("[Phase 1] Split & Sort started...");
 var sw = Stopwatch.StartNew();
 
-var chunkSorter = new ChunkSorter(
-    Defaults.MaxChunkBytes,
-    Defaults.TempDir,
-    Environment.ProcessorCount
-);
+var chunkSorter = new ChunkSorter(defaults);
 
 var chunks = await chunkSorter.SplitAndSortAsync(inputFile);
 
@@ -34,19 +32,17 @@ Console.WriteLine($"-- Chunks created: {chunks.Count}");
 Console.WriteLine($"-- Time: {sw.Elapsed}");
 Console.WriteLine();
 
-Console.WriteLine("[Phase 2+] Merge started...");
+Console.WriteLine("[Phase 2] Merge started...");
 sw.Restart();
 
-var merger = new ExternalMerger(
-    Defaults.MaxMergeFiles,
-    Defaults.TempDir);
+var merger = new ExternalMerger(defaults);
 
-var resultFilePath = Path.Combine(Defaults.TempDir, Defaults.SortedFileName);
-merger.MergeAllChunks(chunks, resultFilePath);
+merger.MergeAllChunks(chunks);
 
 sw.Stop();
-Console.WriteLine("[Phase 2+] Done");
+Console.WriteLine("[Phase 2] Done");
 Console.WriteLine($"-- Time: {sw.Elapsed}");
 Console.WriteLine();
 
+Directory.Delete(defaults.TempDir);
 Console.WriteLine("=== Finished successfully ===");

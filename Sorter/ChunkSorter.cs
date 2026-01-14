@@ -6,35 +6,29 @@ namespace Sorter;
 
 internal sealed class ChunkSorter
 {
-    private const int LineRecordBufferSize = 1000_000;
-
-    private readonly long _maxChunkBytes;
-    private readonly int _maxParallelism;
+    private readonly Defaults _defaults;
 
     private readonly SemaphoreSlim _semaphore;
-    private readonly string _tempDir;
 
-    public ChunkSorter(long maxChunkBytes, string tempDir, int maxParallelism)
+    public ChunkSorter(Defaults defaults)
     {
-        _maxChunkBytes = maxChunkBytes;
-        _tempDir = tempDir;
-        _maxParallelism = maxParallelism;
-        _semaphore = new SemaphoreSlim(maxParallelism, maxParallelism);
+        _defaults = defaults;
+        _semaphore = new SemaphoreSlim(_defaults.MaxParallelism, _defaults.MaxParallelism);
     }
 
     public async Task<IReadOnlyList<string>> SplitAndSortAsync(string inputFile)
     {
-        Directory.CreateDirectory(_tempDir);
+        Directory.CreateDirectory(_defaults.TempDir);
 
         var chunkFiles = new ConcurrentBag<string>();
-        var buffer = ArrayPool<LineRecord>.Shared.Rent(LineRecordBufferSize);
+        var buffer = ArrayPool<LineRecord>.Shared.Rent(_defaults.ChunkSorterBufferSize);
         var bufferCount = 0;
         long currentBytes = 0;
         var chunkIndex = 0;
 
         using var reader = new StreamReader(
             new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read,
-                Defaults.FileBufferSize),
+                _defaults.FileBufferSize),
             Encoding.UTF8);
 
         var tasks = new List<Task>();
@@ -51,17 +45,17 @@ internal sealed class ChunkSorter
             buffer[bufferCount++] = record;
             currentBytes += Encoding.UTF8.GetByteCount(line);
 
-            if (currentBytes >= _maxChunkBytes || bufferCount >= buffer.Length)
+            if (currentBytes >= _defaults.MaxChunkBytes || bufferCount >= buffer.Length)
             {
                 var chunk = buffer;
                 var count = bufferCount;
 
                 tasks.Add(FlushChunkAsync(chunk, count, chunkIndex++, chunkFiles));
-                buffer = ArrayPool<LineRecord>.Shared.Rent(LineRecordBufferSize);
+                buffer = ArrayPool<LineRecord>.Shared.Rent(_defaults.ChunkSorterBufferSize);
                 bufferCount = 0;
                 currentBytes = 0;
 
-                if (tasks.Count >= _maxParallelism)
+                if (tasks.Count >= _defaults.MaxParallelism)
                 {
                     var finished = await Task.WhenAny(tasks);
                     tasks.Remove(finished);
@@ -90,10 +84,10 @@ internal sealed class ChunkSorter
         {
             Array.Sort(records, 0, bufferCount);
 
-            var chunkFile = Path.Combine(_tempDir, $"chunk_{index}.txt");
+            var chunkFile = Path.Combine(_defaults.TempDir, $"chunk_{index}.txt");
             await using var writer = new StreamWriter(
                 new FileStream(chunkFile, FileMode.Create, FileAccess.Write, FileShare.None,
-                    Defaults.FileBufferSize),
+                    _defaults.FileBufferSize),
                 Encoding.UTF8);
 
             for (var i = 0; i < bufferCount; i++)

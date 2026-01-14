@@ -2,6 +2,8 @@
 
 var random = new Random();
 
+const int maxStringsPoolSize = 10_000;
+
 string[] GetStrings()
 {
     var defaultStrings = new[]
@@ -34,10 +36,10 @@ string[] GetStrings()
         return defaultStrings;
     }
 
-    if (stringsPoolSize > 10000)
+    if (stringsPoolSize > maxStringsPoolSize)
     {
         Console.WriteLine(
-            "Strings pool size should be less than 10000, will be used default strings");
+            $"Strings pool size should be less than {maxStringsPoolSize}, will be used default strings");
         return defaultStrings;
     }
 
