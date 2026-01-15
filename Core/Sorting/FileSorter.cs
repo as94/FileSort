@@ -6,11 +6,13 @@ namespace Core.Sorting;
 
 public sealed class FileSorter
 {
+    private readonly IConsole _console;
     private readonly Defaults _defaults;
 
-    public FileSorter(Defaults defaults)
+    public FileSorter(Defaults defaults, IConsole console)
     {
         _defaults = defaults;
+        _console = console;
     }
 
     public async Task SortFileAsync(string inputFile, string outputFile)
@@ -26,7 +28,7 @@ public sealed class FileSorter
         var reader = new FileLineReader(_defaults);
         var writer = new FileLineWriter(_defaults);
 
-        Console.WriteLine("[Phase 1] Split & Sort started...");
+        _console.WriteLine("[Phase 1] Split & Sort started...");
         var sw = Stopwatch.StartNew();
 
         var chunkSorter = new ChunkSorter(
@@ -38,12 +40,12 @@ public sealed class FileSorter
         var chunks = await chunkSorter.SplitAndSortAsync(inputFile);
 
         sw.Stop();
-        Console.WriteLine("[Phase 1] Done");
-        Console.WriteLine($"-- Chunks created: {chunks.Count}");
-        Console.WriteLine($"-- Time: {sw.Elapsed}");
-        Console.WriteLine();
+        _console.WriteLine("[Phase 1] Done");
+        _console.WriteLine($"-- Chunks created: {chunks.Count}");
+        _console.WriteLine($"-- Time: {sw.Elapsed}");
+        _console.WriteLine();
 
-        Console.WriteLine("[Phase 2] Merge started...");
+        _console.WriteLine("[Phase 2] Merge started...");
         sw.Restart();
 
         var mergeAlgorithm = new KWayMergeAlgorithm<LineRecord>();
@@ -58,8 +60,8 @@ public sealed class FileSorter
         merger.MergeAllChunks(chunks, outputFile);
 
         sw.Stop();
-        Console.WriteLine("[Phase 2] Done");
-        Console.WriteLine($"-- Time: {sw.Elapsed}");
-        Console.WriteLine();
+        _console.WriteLine("[Phase 2] Done");
+        _console.WriteLine($"-- Time: {sw.Elapsed}");
+        _console.WriteLine();
     }
 }

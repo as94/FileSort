@@ -1,4 +1,5 @@
 ﻿using Core.Sorting;
+using Core.Sorting.IO;
 
 if (args.Length < 2)
 {
@@ -16,7 +17,7 @@ if (!File.Exists(inputFile))
 }
 
 var defaults = Defaults.Production;
-var sorter = new FileSorter(defaults);
+var sorter = new FileSorter(defaults, new RealConsole());
 
 await sorter.SortFileAsync(inputFile, outputFile);
 
