@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Text;
+using System.Threading.Channels;
 using Core.Sorting.Algorithms;
 using Core.Sorting.IO;
 
@@ -11,8 +12,6 @@ public sealed class ChunkSorter
     private readonly IChunkSortAlgorithm<LineRecord> _chunkSortAlgorithm;
     private readonly Defaults _defaults;
     private readonly ILineReader<LineRecord> _reader;
-
-    private readonly SemaphoreSlim _semaphore;
     private readonly ILineWriter<LineRecord> _writer;
 
     public ChunkSorter(
@@ -25,18 +24,38 @@ public sealed class ChunkSorter
         _reader = reader;
         _writer = writer;
         _defaults = defaults;
-        _semaphore = new SemaphoreSlim(_defaults.MaxParallelism, _defaults.MaxParallelism);
     }
 
     public async Task<IReadOnlyList<string>> SplitAndSortAsync(string inputFile)
     {
         var chunkFiles = new ConcurrentBag<string>();
+        var channel =
+            Channel.CreateBounded<(LineRecord[] Buffer, int Count)>(_defaults.MaxParallelism);
+
+        var chunkIndex = -1;
+
+        var consumerTasks = Enumerable.Range(0, _defaults.MaxParallelism).Select(_ =>
+            Task.Run(async () =>
+            {
+                await foreach (var item in channel.Reader.ReadAllAsync())
+                {
+                    var buffer = item.Buffer;
+                    var count = item.Count;
+                    var index = Interlocked.Increment(ref chunkIndex);
+                    _chunkSortAlgorithm.Sort(buffer, count);
+
+                    var path = Path.Combine(_defaults.TempDir, $"chunk_{index}.txt");
+                    _writer.Write(path, buffer.AsSpan(0, count).ToArray());
+                    chunkFiles.Add(path);
+
+                    ArrayPool<LineRecord>.Shared.Return(buffer, true);
+                }
+            })).ToArray();
+
         var buffer = ArrayPool<LineRecord>.Shared.Rent(_defaults.ChunkSorterBufferSize);
         var bufferCount = 0;
         long currentBytes = 0;
-        var chunkIndex = 0;
 
-        var tasks = new List<Task>();
         foreach (var record in _reader.Read(inputFile))
         {
             buffer[bufferCount++] = record;
@@ -44,54 +63,22 @@ public sealed class ChunkSorter
 
             if (currentBytes >= _defaults.MaxChunkBytes || bufferCount >= buffer.Length)
             {
-                var chunk = buffer;
-                var count = bufferCount;
+                await channel.Writer.WriteAsync((buffer, bufferCount));
 
-                tasks.Add(FlushChunkAsync(chunk, count, chunkIndex++, chunkFiles));
                 buffer = ArrayPool<LineRecord>.Shared.Rent(_defaults.ChunkSorterBufferSize);
                 bufferCount = 0;
                 currentBytes = 0;
-
-                if (tasks.Count >= _defaults.MaxParallelism)
-                {
-                    var finished = await Task.WhenAny(tasks);
-                    tasks.Remove(finished);
-                }
             }
         }
 
         if (bufferCount > 0)
         {
-            tasks.Add(FlushChunkAsync(buffer, bufferCount, chunkIndex++, chunkFiles));
+            await channel.Writer.WriteAsync((buffer, bufferCount));
         }
 
-        await Task.WhenAll(tasks);
+        channel.Writer.Complete();
+        await Task.WhenAll(consumerTasks);
 
-        return chunkFiles
-            .ToList()
-            .AsReadOnly();
-    }
-
-    private async Task FlushChunkAsync(LineRecord[] records, int bufferCount, int index,
-        ConcurrentBag<string> chunkFiles)
-    {
-        await _semaphore.WaitAsync();
-
-        try
-        {
-            _chunkSortAlgorithm.Sort(records, bufferCount);
-
-            var chunkFile = Path.Combine(_defaults.TempDir, $"chunk_{index}.txt");
-            var path = Path.Combine(_defaults.TempDir, $"chunk_{index}.txt");
-
-            _writer.Write(path, records.AsSpan(0, bufferCount).ToArray());
-
-            chunkFiles.Add(chunkFile);
-        }
-        finally
-        {
-            _semaphore.Release();
-            ArrayPool<LineRecord>.Shared.Return(records, true);
-        }
+        return chunkFiles.ToList().AsReadOnly();
     }
 }
