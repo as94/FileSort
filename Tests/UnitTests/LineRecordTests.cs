@@ -1,5 +1,5 @@
+using Core.Sorting;
 using FluentAssertions;
-using Sorter;
 
 namespace Tests.UnitTests;
 

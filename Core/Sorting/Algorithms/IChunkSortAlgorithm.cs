@@ -1,4 +1,4 @@
-namespace Sorter.Algorithms;
+namespace Core.Sorting.Algorithms;
 
 public interface IChunkSortAlgorithm<in T> where T : IComparable<LineRecord>
 {

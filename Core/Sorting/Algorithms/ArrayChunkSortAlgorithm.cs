@@ -1,4 +1,4 @@
-namespace Sorter.Algorithms;
+namespace Core.Sorting.Algorithms;
 
 public sealed class ArrayChunkSortAlgorithm<T> : IChunkSortAlgorithm<T>
     where T : IComparable<LineRecord>

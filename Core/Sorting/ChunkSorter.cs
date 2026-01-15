@@ -1,10 +1,10 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Text;
-using Sorter.Algorithms;
-using Sorter.IO;
+using Core.Sorting.Algorithms;
+using Core.Sorting.IO;
 
-namespace Sorter;
+namespace Core.Sorting;
 
 public sealed class ChunkSorter
 {

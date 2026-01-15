@@ -1,4 +1,4 @@
-namespace Sorter.Algorithms;
+namespace Core.Sorting.Algorithms;
 
 public sealed class KWayMergeAlgorithm<T> : IMergeAlgorithm<T> where T : IComparable<T>
 {

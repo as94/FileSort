@@ -1,4 +1,4 @@
-namespace Sorter;
+namespace Core.Sorting;
 
 public readonly struct LineRecord : IComparable<LineRecord>
 {

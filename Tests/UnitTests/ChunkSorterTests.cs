@@ -1,8 +1,8 @@
+using Core.Sorting;
+using Core.Sorting.Algorithms;
+using Core.Sorting.IO;
 using FluentAssertions;
 using Moq;
-using Sorter;
-using Sorter.Algorithms;
-using Sorter.IO;
 
 namespace Tests.UnitTests;
 

@@ -1,6 +1,6 @@
+using Core.Sorting;
+using Core.Sorting.Algorithms;
 using FluentAssertions;
-using Sorter;
-using Sorter.Algorithms;
 
 namespace Tests.UnitTests;
 

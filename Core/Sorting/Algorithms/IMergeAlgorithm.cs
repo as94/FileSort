@@ -1,4 +1,4 @@
-namespace Sorter.Algorithms;
+namespace Core.Sorting.Algorithms;
 
 public interface IMergeAlgorithm<T> where T : IComparable<T>
 {

@@ -1,10 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generator", "Generator\Generator.csproj", "{F9B049C0-551E-47A1-A638-05C6A80D7013}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generator.Console", "Generator.Console\Generator.Console.csproj", "{F9B049C0-551E-47A1-A638-05C6A80D7013}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sorter", "Sorter\Sorter.csproj", "{2E247571-9DD9-4495-B329-75C972D32CEB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sorter.Console", "Sorter.Console\Sorter.Console.csproj", "{2E247571-9DD9-4495-B329-75C972D32CEB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{0A87DD3B-3E99-45FF-9361-CD458B400C74}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{254547C4-C066-4A3C-A5C8-CEAA48391A2E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,5 +26,9 @@ Global
 		{0A87DD3B-3E99-45FF-9361-CD458B400C74}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0A87DD3B-3E99-45FF-9361-CD458B400C74}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0A87DD3B-3E99-45FF-9361-CD458B400C74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{254547C4-C066-4A3C-A5C8-CEAA48391A2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{254547C4-C066-4A3C-A5C8-CEAA48391A2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{254547C4-C066-4A3C-A5C8-CEAA48391A2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{254547C4-C066-4A3C-A5C8-CEAA48391A2E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

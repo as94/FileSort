@@ -1,4 +1,4 @@
-namespace Sorter.IO;
+namespace Core.Sorting.IO;
 
 public sealed class FileLineReader : ILineReader<LineRecord>
 {

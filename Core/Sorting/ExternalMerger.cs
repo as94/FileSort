@@ -1,7 +1,7 @@
-using Sorter.Algorithms;
-using Sorter.IO;
+using Core.Sorting.Algorithms;
+using Core.Sorting.IO;
 
-namespace Sorter;
+namespace Core.Sorting;
 
 public sealed class ExternalMerger
 {
@@ -25,7 +25,7 @@ public sealed class ExternalMerger
         _defaults = defaults;
     }
 
-    public void MergeAllChunks(IReadOnlyList<string> initialChunks)
+    public void MergeAllChunks(IReadOnlyList<string> initialChunks, string outputFilePath)
     {
         var round = 0;
         var current = initialChunks;
@@ -57,7 +57,7 @@ public sealed class ExternalMerger
             current = nextRound;
         }
 
-        _tempFileProvider.MoveToFinal(current[0], _defaults.SortedFileName);
+        _tempFileProvider.MoveToFinal(current[0], outputFilePath);
     }
 
     public void MergeChunks(IReadOnlyList<string> chunks, string outputFile)

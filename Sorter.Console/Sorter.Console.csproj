@@ -5,7 +5,11 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>FileSort</RootNamespace>
+        <RootNamespace>Sorter</RootNamespace>
     </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Core\Core.csproj"/>
+    </ItemGroup>
 
 </Project>

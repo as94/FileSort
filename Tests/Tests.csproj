@@ -23,7 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Sorter\Sorter.csproj"/>
+        <ProjectReference Include="..\Sorter.Console\Sorter.Console.csproj"/>
     </ItemGroup>
 
 </Project>

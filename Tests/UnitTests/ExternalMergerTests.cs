@@ -1,8 +1,8 @@
+using Core.Sorting;
+using Core.Sorting.Algorithms;
+using Core.Sorting.IO;
 using FluentAssertions;
 using Moq;
-using Sorter;
-using Sorter.Algorithms;
-using Sorter.IO;
 
 namespace Tests.UnitTests;
 
@@ -16,10 +16,9 @@ public class ExternalMergerTests
         var chunks = new List<string> { "f1", "f2", "f3" };
         var readerMock = new Mock<ILineReader<LineRecord>>();
         readerMock.Setup(r => r.Read(It.IsAny<string>()))
-            .Returns<string>(file =>
-            [
-                new LineRecord(1, file),
-                new LineRecord(2, file)
+            .Returns([
+                new LineRecord(1, "B"),
+                new LineRecord(2, "A")
             ]);
         var writerMock = new Mock<ILineWriter<LineRecord>>();
         List<LineRecord[]> writtenChunks = new();
@@ -41,7 +40,7 @@ public class ExternalMergerTests
         var merger = new ExternalMerger(mergeMock.Object, readerMock.Object, writerMock.Object,
             tempMock.Object, defaults);
 
-        merger.MergeAllChunks(chunks);
+        merger.MergeAllChunks(chunks, "sorted.txt");
 
         writtenChunks.Count.Should().BeGreaterThan(0);
         foreach (var arr in writtenChunks)
@@ -50,7 +49,7 @@ public class ExternalMergerTests
         }
 
         tempMock.Verify(t => t.Delete(It.IsAny<string>()), Times.Exactly(5));
-        tempMock.Verify(t => t.MoveToFinal(It.IsAny<string>(), defaults.SortedFileName),
+        tempMock.Verify(t => t.MoveToFinal(It.IsAny<string>(), "sorted.txt"),
             Times.Once);
     }
 

@@ -1,4 +1,4 @@
-namespace Sorter;
+namespace Core.Sorting;
 
 public sealed class Defaults
 {
@@ -29,5 +29,4 @@ public sealed class Defaults
     public int MaxParallelism => Environment.ProcessorCount;
 
     public string TempDir => "temp";
-    public string SortedFileName => "sorted.txt";
 }
