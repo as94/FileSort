@@ -40,15 +40,20 @@ public sealed class ChunkSorter
                 await foreach (var item in channel.Reader.ReadAllAsync())
                 {
                     var buffer = item.Buffer;
-                    var count = item.Count;
-                    var index = Interlocked.Increment(ref chunkIndex);
-                    _chunkSortAlgorithm.Sort(buffer, count);
+                    try
+                    {
+                        var count = item.Count;
+                        var index = Interlocked.Increment(ref chunkIndex);
+                        _chunkSortAlgorithm.Sort(buffer, count);
 
-                    var path = Path.Combine(_defaults.TempDir, $"chunk_{index}.txt");
-                    _writer.Write(path, buffer.AsSpan(0, count).ToArray());
-                    chunkFiles.Add(path);
-
-                    ArrayPool<LineRecord>.Shared.Return(buffer, true);
+                        var path = Path.Combine(_defaults.TempDir, $"chunk_{index}.txt");
+                        _writer.Write(path, buffer.AsSpan(0, count).ToArray());
+                        chunkFiles.Add(path);
+                    }
+                    finally
+                    {
+                        ArrayPool<LineRecord>.Shared.Return(buffer, true);
+                    }
                 }
             })).ToArray();
 

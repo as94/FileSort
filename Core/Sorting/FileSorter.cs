@@ -25,6 +25,18 @@ public sealed class FileSorter
             Directory.CreateDirectory(directory);
         }
 
+        try
+        {
+            await SortFileAsyncInternal(inputFile, outputFile);
+        }
+        finally
+        {
+            SafeDeleteDirectory(_defaults.TempDir);
+        }
+    }
+
+    private async Task SortFileAsyncInternal(string inputFile, string outputFile)
+    {
         var reader = new FileLineReader(_defaults);
         var writer = new FileLineWriter(_defaults);
 
@@ -63,5 +75,39 @@ public sealed class FileSorter
         _console.WriteLine("[Phase 2] Done");
         _console.WriteLine($"-- Time: {sw.Elapsed}");
         _console.WriteLine();
+    }
+
+    private static void SafeDeleteDirectory(string path, int retries = 3, int delayMs = 200)
+    {
+        for (var attempt = 0; attempt < retries; attempt++)
+        {
+            try
+            {
+                if (!Directory.Exists(path))
+                {
+                    return;
+                }
+
+                Directory.Delete(path, true);
+                return;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return;
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+
+            Thread.Sleep(delayMs * (attempt + 1));
+        }
+
+        if (Directory.Exists(path))
+        {
+            Directory.Delete(path, true);
+        }
     }
 }
